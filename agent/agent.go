@@ -9,6 +9,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // Интерфейс агента для мокирования в тестах
@@ -44,11 +46,38 @@ var orchestratorURL = "http://localhost:8080/internal/task"
 
 // Тайминги выполнения операций
 var (
-	timeAdditionMs      = getEnvInt("TIME_ADDITION_MS", 500)
-	timeSubtractionMs   = getEnvInt("TIME_SUBTRACTION_MS", 500)
-	timeMultiplicationMs = getEnvInt("TIME_MULTIPLICATIONS_MS", 700)
-	timeDivisionMs      = getEnvInt("TIME_DIVISIONS_MS", 1000)
+	timeAdditionMs      int
+	timeSubtractionMs   int
+	timeMultiplicationMs int
+	timeDivisionMs      int
 )
+
+func init() {
+	// Загружаем переменные окружения из .env файла
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Не удалось загрузить .env файл, использую стандартные значения")
+	}
+
+	// Читаем переменные окружения
+	timeAdditionMs = getEnvInt("TIME_ADDITION_MS", 500)
+	timeSubtractionMs = getEnvInt("TIME_SUBTRACTION_MS", 500)
+	timeMultiplicationMs = getEnvInt("TIME_MULTIPLICATIONS_MS", 700)
+	timeDivisionMs = getEnvInt("TIME_DIVISIONS_MS", 1000)
+}
+
+// **Функция чтения переменных окружения**
+func getEnvInt(key string, defaultValue int) int {
+	valueStr, exists := os.LookupEnv(key)
+	if !exists {
+		return defaultValue
+	}
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
 
 // **StartAgent** — точка входа, вызываемая из main
 func StartAgent() {
@@ -197,17 +226,4 @@ func getOperationDelay(op string) int {
 	default:
 		return 500 // Значение по умолчанию
 	}
-}
-
-// **Функция чтения переменных окружения**
-func getEnvInt(key string, defaultValue int) int {
-	valueStr, exists := os.LookupEnv(key)
-	if !exists {
-		return defaultValue
-	}
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return defaultValue
-	}
-	return value
 }
