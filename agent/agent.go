@@ -13,7 +13,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Интерфейс агента для мокирования в тестах
 type Agent interface {
 	Start()
 }
@@ -24,10 +23,6 @@ func (a *DefaultAgent) Start() {
 	StartAgentLogic()
 }
 
-// Глобальная переменная, позволяющая подменять агента в тестах
-var ActiveAgent Agent = &DefaultAgent{}
-
-// Task — структура задачи, получаемая от сервера
 type Task struct {
 	ID        string  `json:"id"`
 	Arg1      float64 `json:"arg1"`
@@ -35,38 +30,33 @@ type Task struct {
 	Operation string  `json:"operation"`
 }
 
-// Result — структура результата, отправляемая на сервер
 type Result struct {
 	ID     string  `json:"id"`
 	Result float64 `json:"result"`
 }
 
-// URL оркестратора
 var orchestratorURL = "http://localhost:8080/internal/task"
 
-// Тайминги выполнения операций
 var (
-	timeAdditionMs      int
-	timeSubtractionMs   int
+	timeAdditionMs       int
+	timeSubtractionMs    int
 	timeMultiplicationMs int
-	timeDivisionMs      int
+	timeDivisionMs       int
 )
 
 func init() {
-	// Загружаем переменные окружения из .env файла
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Не удалось загрузить .env файл, использую стандартные значения")
 	}
 
-	// Читаем переменные окружения
 	timeAdditionMs = getEnvInt("TIME_ADDITION_MS", 500)
 	timeSubtractionMs = getEnvInt("TIME_SUBTRACTION_MS", 500)
 	timeMultiplicationMs = getEnvInt("TIME_MULTIPLICATIONS_MS", 700)
 	timeDivisionMs = getEnvInt("TIME_DIVISIONS_MS", 1000)
 }
 
-// **Функция чтения переменных окружения**
 func getEnvInt(key string, defaultValue int) int {
 	valueStr, exists := os.LookupEnv(key)
 	if !exists {
@@ -79,12 +69,12 @@ func getEnvInt(key string, defaultValue int) int {
 	return value
 }
 
-// **StartAgent** — точка входа, вызываемая из main
 func StartAgent() {
 	ActiveAgent.Start()
 }
 
-// **Основная логика агента**
+var ActiveAgent Agent = &DefaultAgent{}
+
 func StartAgentLogic() {
 	log.Println("Агент запущен и ожидает задачи...")
 
@@ -93,12 +83,10 @@ func StartAgentLogic() {
 
 	taskQueue := make(chan Task, power)
 
-	// Запускаем воркеры
 	for i := 0; i < power; i++ {
 		go worker(taskQueue)
 	}
 
-	// Цикл получения задач
 	for {
 		task, err := fetchTask()
 		if err != nil {
@@ -113,40 +101,42 @@ func StartAgentLogic() {
 			continue
 		}
 
-		// Отправляем задачу в очередь
 		taskQueue <- task
 	}
 }
 
-// **Получение задачи от оркестратора**
 func fetchTask() (Task, error) {
 	resp, err := http.Get(orchestratorURL)
 	if err != nil {
+		log.Printf("Ошибка получения задачи: %v", err)
 		return Task{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
+		log.Println("Сервер ответил: задач нет (404)")
 		return Task{}, nil
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("Ошибка: сервер вернул статус %d", resp.StatusCode)
 		return Task{}, fmt.Errorf("ошибка: %d", resp.StatusCode)
 	}
 
-	var response struct {
-		Task Task `json:"task"`
-	}
+	var response Task
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
+		log.Printf("Ошибка декодирования задачи: %v", err)
 		return Task{}, err
 	}
 
-	return response.Task, nil
+	log.Printf("Получена задача: %+v", response)
+	return response, nil
 }
 
-// **Отправка результата обратно на сервер**
 func sendResult(result Result) error {
+	log.Printf("Отправка результата: %+v", result)
+
 	data, err := json.Marshal(result)
 	if err != nil {
 		return err
@@ -154,11 +144,13 @@ func sendResult(result Result) error {
 
 	resp, err := http.Post(orchestratorURL, "application/json", bytes.NewBuffer(data))
 	if err != nil {
+		log.Printf("Ошибка отправки результата: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("Ошибка: сервер вернул статус %d", resp.StatusCode)
 		return fmt.Errorf("Ошибка: сервер вернул статус %d", resp.StatusCode)
 	}
 
@@ -166,35 +158,34 @@ func sendResult(result Result) error {
 	return nil
 }
 
-// **Воркеры-вычислители**
 func worker(queue chan Task) {
 	for task := range queue {
-		log.Printf("Обработка: %f %s %f", task.Arg1, task.Operation, task.Arg2)
+		log.Printf("Обработка задачи: %f %s %f", task.Arg1, task.Operation, task.Arg2)
 
-		// Добавляем задержку перед вычислением
 		delay := getOperationDelay(task.Operation)
 		log.Printf("Ожидание %d мс перед выполнением операции %s", delay, task.Operation)
 		time.Sleep(time.Duration(delay) * time.Millisecond)
 
 		value, err := compute(task.Arg1, task.Arg2, task.Operation)
-
 		if err != nil {
 			log.Printf("Ошибка вычисления: %v", err)
 			continue
 		}
 
 		res := Result{ID: task.ID, Result: value}
+		log.Printf("Результат вычисления: %f", value)
 
 		if err := sendResult(res); err != nil {
 			log.Printf("Ошибка отправки результата: %v", err)
 		} else {
-			log.Printf("Результат отправлен: %f", value)
+			log.Println("Результат успешно отправлен!")
 		}
 	}
 }
 
-// **Функция вычисления**
 func compute(arg1, arg2 float64, op string) (float64, error) {
+	log.Printf("Вычисление: %f %s %f", arg1, op, arg2)
+
 	switch op {
 	case "+":
 		return arg1 + arg2, nil
@@ -212,7 +203,6 @@ func compute(arg1, arg2 float64, op string) (float64, error) {
 	}
 }
 
-// **Функция получения задержки для операции**
 func getOperationDelay(op string) int {
 	switch op {
 	case "+":
@@ -224,6 +214,6 @@ func getOperationDelay(op string) int {
 	case "/":
 		return timeDivisionMs
 	default:
-		return 500 // Значение по умолчанию
+		return 500
 	}
 }

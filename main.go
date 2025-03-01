@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-	// Запускаем сервер в горутине
 	go func() {
 		log.Println("Запуск сервера...")
 		server.StartServer()
@@ -20,5 +19,3 @@ func main() {
 
 	select {}
 }
-
-

@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	//"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 	"testing"
 )
 
-// Логирование запроса и ответа
 func logRequestResponse(testName string, req *http.Request, rr *httptest.ResponseRecorder) {
 	fmt.Printf("[%s] REQUEST: %s %s\n", testName, req.Method, req.URL.Path)
 	fmt.Printf("[%s] REQUEST BODY: %s\n", testName, req.Body)
@@ -21,7 +19,6 @@ func logRequestResponse(testName string, req *http.Request, rr *httptest.Respons
 	fmt.Printf("[%s] RESPONSE STATUS: %d\n", testName, rr.Code)
 }
 
-// Тест добавления выражения
 func TestAddExpression(t *testing.T) {
 	testName := "TestAddExpression"
 	reqBody := `{"expression": "2 + 3"}`
@@ -40,7 +37,6 @@ func TestAddExpression(t *testing.T) {
 	fmt.Printf("[%s] прошел успешно!\n", testName)
 }
 
-// Тест получения списка выражений
 func TestGetAllExpressions(t *testing.T) {
 	testName := "TestGetAllExpressions"
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/expressions", nil)
@@ -57,11 +53,9 @@ func TestGetAllExpressions(t *testing.T) {
 	fmt.Printf("✅ [%s] прошел успешно!\n", testName)
 }
 
-// Тест получения конкретного выражения
 func TestGetExpression(t *testing.T) {
 	testName := "TestGetExpression"
 
-	// Создаем тестовое выражение
 	expr := Expression{
 		ID:     "test_id",
 		Expr:   "4 * 5",
@@ -83,11 +77,9 @@ func TestGetExpression(t *testing.T) {
 	fmt.Printf("[%s] прошел успешно!\n", testName)
 }
 
-// Тест получения задачи агентом
 func TestGetTask(t *testing.T) {
 	testName := "TestGetTask"
 
-	// Создаем тестовую задачу
 	task := Task{
 		ID:        "task1",
 		Arg1:      2,
@@ -110,11 +102,9 @@ func TestGetTask(t *testing.T) {
 	fmt.Printf("[%s] прошел успешно!\n", testName)
 }
 
-// Тест завершения задачи агентом
 func TestCompleteTask(t *testing.T) {
 	testName := "TestCompleteTask"
 
-	// Создаем тестовое выражение с задачей
 	expr := Expression{
 		ID:     "expr1",
 		Expr:   "5 - 3",
@@ -141,7 +131,6 @@ func TestCompleteTask(t *testing.T) {
 	fmt.Printf("[%s] прошел успешно!\n", testName)
 }
 
-// Финальный тест для логирования успешных тестов
 func TestAllTestsPassed(t *testing.T) {
 	log.Println("🎉 Все тесты пройдены успешно!")
 	fmt.Println("🎉 Все тесты пройдены успешно!")

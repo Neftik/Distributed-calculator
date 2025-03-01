@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-// Тест функции вычислений
 func TestCompute(t *testing.T) {
 	tests := []struct {
 		arg1, arg2 float64
@@ -19,8 +18,8 @@ func TestCompute(t *testing.T) {
 		{10, 4, "-", 6, false},
 		{6, 7, "*", 42, false},
 		{8, 2, "/", 4, false},
-		{5, 0, "/", 0, true}, // Должна вернуть ошибку деления на 0
-		{2, 3, "unknown", 0, true}, // Должна вернуть ошибку неизвестной операции
+		{5, 0, "/", 0, true},
+		{2, 3, "unknown", 0, true}, 
 	}
 
 	for _, tt := range tests {
@@ -34,7 +33,6 @@ func TestCompute(t *testing.T) {
 	}
 }
 
-// Тест функции получения задачи (имитация сервера)
 func TestFetchTask(t *testing.T) {
 	task := Task{
 		ID:        "123",
@@ -49,7 +47,6 @@ func TestFetchTask(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Переопределяем URL оркестратора
 	orchestratorURL = server.URL
 
 	receivedTask, err := fetchTask()
@@ -61,7 +58,6 @@ func TestFetchTask(t *testing.T) {
 	}
 }
 
-// Тест функции отправки результата
 func TestSendResult(t *testing.T) {
 	result := Result{
 		ID:     "123",
@@ -75,7 +71,6 @@ func TestSendResult(t *testing.T) {
 			t.Fatalf("Ошибка при декодировании JSON: %v", err)
 		}
 
-		// Проверяем, что отправленные данные совпадают
 		if received.ID != result.ID || received.Result != result.Result {
 			t.Errorf("sendResult() отправил %v, ожидается %v", received, result)
 		}
@@ -84,7 +79,6 @@ func TestSendResult(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Переопределяем URL оркестратора
 	orchestratorURL = server.URL
 
 	err := sendResult(result)
@@ -93,7 +87,6 @@ func TestSendResult(t *testing.T) {
 	}
 }
 
-// Тест функции worker (имитация обработки задачи)
 func TestWorker(t *testing.T) {
 	task := Task{
 		ID:        "task-1",
@@ -109,7 +102,6 @@ func TestWorker(t *testing.T) {
 			t.Fatalf("Ошибка при декодировании JSON: %v", err)
 		}
 
-		// Ожидаемый результат: 6 * 7 = 42
 		if received.Result != 42 {
 			t.Errorf("worker() отправил %v, ожидается %v", received.Result, 42)
 		}
@@ -118,7 +110,6 @@ func TestWorker(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Переопределяем URL оркестратора
 	orchestratorURL = server.URL
 
 	taskQueue := make(chan Task, 1)
